@@ -143,6 +143,7 @@ const Graph = ({ type, data, options }) => {
 const Topbar = ({ sidebarOpen, setSidebarOpen }) => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { profile } = useContext(DataContext);
     return (
         <div className="h-16 border-b border-gray-800 glass-panel fixed top-0 w-full z-40 flex items-center px-4 md:px-6 justify-between">
             <div className="flex items-center space-x-2 md:space-x-4">
@@ -159,6 +160,11 @@ const Topbar = ({ sidebarOpen, setSidebarOpen }) => {
                 )}
             </div>
             <div className="flex items-center space-x-4 md:space-x-6">
+                {profile && (
+                    <div className="text-gray-400 text-sm hidden md:block">
+                        Welcome, <span className="text-white font-bold">{profile.username}</span>
+                    </div>
+                )}
                 <div className="text-lg md:text-xl font-black tracking-wider text-white truncate">GradeVault</div>
                 <button onClick={async () => await supabase.auth.signOut()} className="text-gray-400 hover:text-white transition-colors flex items-center space-x-2 border border-gray-800 hover:border-gray-600 rounded px-2 py-1 md:px-3 md:py-1.5 text-xs md:text-sm">
                     <Icons.Logout /> <span className="hidden sm:inline">Logout</span>
@@ -974,7 +980,7 @@ const CourseView = () => {
 
 const Auth = () => {
     const [isLogin, setIsLogin] = useState(true);
-    const [email, setEmail] = useState('');
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -984,13 +990,23 @@ const Auth = () => {
         setError(null);
         setLoading(true);
         try {
+            const fakeEmail = `${username.toLowerCase().trim()}@gradevault.internal`;
             if (isLogin) {
-                const { error } = await supabase.auth.signInWithPassword({ email, password });
+                const { error } = await supabase.auth.signInWithPassword({ email: fakeEmail, password });
                 if (error) throw error;
             } else {
-                const { error } = await supabase.auth.signUp({ email, password });
-                if (error) throw error;
-                else alert('Signup successful! You can now log in.');
+                const { data, error } = await supabase.auth.signUp({ email: fakeEmail, password });
+                if (error) {
+                    if (error.message.includes('User already registered')) {
+                        throw new Error('Username already taken, please choose another.');
+                    }
+                    throw error;
+                }
+                if (data?.user) {
+                    await supabase.from('profiles').insert({ id: data.user.id, username });
+                    alert('Signup successful! You can now log in.');
+                    setIsLogin(true);
+                }
             }
         } catch (err) {
             setError(err.message);
@@ -1009,8 +1025,8 @@ const Auth = () => {
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {error && <div className="p-3 bg-red-900/50 border border-red-500 rounded text-red-200 text-sm">{error}</div>}
                     <div>
-                        <label className="block text-xs text-gray-400 mb-1">Email</label>
-                        <input required type="email" className="w-full bg-darkBase border border-gray-700 rounded p-2 text-white focus:border-neonEmerald outline-none" value={email} onChange={e => setEmail(e.target.value)} />
+                        <label className="block text-xs text-gray-400 mb-1">Username</label>
+                        <input required type="text" className="w-full bg-darkBase border border-gray-700 rounded p-2 text-white focus:border-neonEmerald outline-none" value={username} onChange={e => setUsername(e.target.value)} />
                     </div>
                     <div>
                         <label className="block text-xs text-gray-400 mb-1">Password</label>
@@ -1022,7 +1038,7 @@ const Auth = () => {
                 </form>
                 <div className="mt-6 text-center text-sm text-gray-500">
                     {isLogin ? "Don't have an account? " : "Already have an account? "}
-                    <button onClick={() => { setIsLogin(!isLogin); setError(null); }} className="text-neonBlue hover:text-blue-400 transition-colors font-medium">
+                    <button type="button" onClick={() => { setIsLogin(!isLogin); setError(null); }} className="text-neonBlue hover:text-blue-400 transition-colors font-medium">
                         {isLogin ? 'Sign Up' : 'Log In'}
                     </button>
                 </div>
@@ -1033,6 +1049,7 @@ const Auth = () => {
 
 const App = () => {
     const [session, setSession] = useState(null);
+    const [profile, setProfile] = useState(null);
     const [semesters, setSemesters] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -1063,8 +1080,12 @@ const App = () => {
 
     useEffect(() => {
         if (session) {
+            supabase.from('profiles').select('username').eq('id', session.user.id).single().then(({data}) => {
+                if (data) setProfile(data);
+            });
             loadData();
         } else {
+            setProfile(null);
             setLoading(false);
         }
     }, [session]);
@@ -1074,7 +1095,7 @@ const App = () => {
     if (!session) return <Auth />;
 
     return (
-        <DataContext.Provider value={{ semesters, loadData }}>
+        <DataContext.Provider value={{ semesters, loadData, profile }}>
             <BrowserRouter>
                 <Layout>
                     <Routes>
