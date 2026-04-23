@@ -144,24 +144,24 @@ const Topbar = ({ sidebarOpen, setSidebarOpen }) => {
     const navigate = useNavigate();
     const location = useLocation();
     return (
-        <div className="h-16 border-b border-gray-800 glass-panel fixed top-0 w-full z-20 flex items-center px-6 justify-between">
-            <div className="flex items-center space-x-4">
-                <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-gray-400 hover:text-white transition-colors flex items-center justify-center">
+        <div className="h-16 border-b border-gray-800 glass-panel fixed top-0 w-full z-40 flex items-center px-4 md:px-6 justify-between">
+            <div className="flex items-center space-x-2 md:space-x-4">
+                <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-gray-400 hover:text-white transition-colors flex items-center justify-center p-1 md:p-0">
                     <Icons.Menu />
                 </button>
                 <Link to="/" className="text-neonEmerald font-bold text-xl flex items-center space-x-2 hover:opacity-80 transition-opacity">
                     <Icons.Home />
                 </Link>
                 {location.pathname !== '/' && (
-                    <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-white transition-colors flex items-center space-x-2 ml-4">
-                        <Icons.Back /> <span>Back</span>
+                    <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-white transition-colors flex items-center space-x-1 md:space-x-2 ml-2 md:ml-4 text-sm md:text-base">
+                        <Icons.Back /> <span className="hidden sm:inline">Back</span>
                     </button>
                 )}
             </div>
-            <div className="flex items-center space-x-6">
-                <div className="text-xl font-black tracking-wider text-white">GradeVault</div>
-                <button onClick={async () => await supabase.auth.signOut()} className="text-gray-400 hover:text-white transition-colors flex items-center space-x-2 border border-gray-800 hover:border-gray-600 rounded px-3 py-1.5 text-sm">
-                    <Icons.Logout /> <span>Logout</span>
+            <div className="flex items-center space-x-4 md:space-x-6">
+                <div className="text-lg md:text-xl font-black tracking-wider text-white truncate">GradeVault</div>
+                <button onClick={async () => await supabase.auth.signOut()} className="text-gray-400 hover:text-white transition-colors flex items-center space-x-2 border border-gray-800 hover:border-gray-600 rounded px-2 py-1 md:px-3 md:py-1.5 text-xs md:text-sm">
+                    <Icons.Logout /> <span className="hidden sm:inline">Logout</span>
                 </button>
             </div>
         </div>
@@ -181,7 +181,7 @@ const Sidebar = ({ isOpen }) => {
     };
 
     return (
-        <div className={`w-64 border-r border-gray-800 glass-panel fixed left-0 top-16 bottom-0 overflow-y-auto flex flex-col pt-6 transition-transform duration-300 z-10 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className={`w-64 border-r border-gray-800 glass-panel fixed left-0 top-16 bottom-0 overflow-y-auto flex flex-col pt-6 transition-transform duration-300 z-30 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
             <div className="px-6 mb-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Semesters</div>
             <div className="flex-1">
                 {semesters.map(s => (
@@ -209,13 +209,31 @@ const Sidebar = ({ isOpen }) => {
 };
 
 const Layout = ({ children }) => {
-    const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
+    const location = useLocation();
+
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth >= 768) setSidebarOpen(true);
+            else setSidebarOpen(false);
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    useEffect(() => {
+        if (window.innerWidth < 768) setSidebarOpen(false);
+    }, [location.pathname]);
+
     return (
-        <div className="flex flex-col min-h-screen">
+        <div className="flex flex-col min-h-screen overflow-x-hidden">
             <Topbar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-            <div className="flex flex-1 pt-16">
+            <div className="flex flex-1 pt-16 relative w-full">
+                {sidebarOpen && (
+                    <div className="fixed inset-0 bg-black/60 z-20 md:hidden mt-16" onClick={() => setSidebarOpen(false)}></div>
+                )}
                 <Sidebar isOpen={sidebarOpen} />
-                <div className={`transition-all duration-300 p-8 w-full bg-darkBase flex flex-col min-h-[calc(100vh-4rem)] ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
+                <div className={`transition-all duration-300 p-4 sm:p-6 md:p-8 w-full bg-darkBase flex flex-col min-h-[calc(100vh-4rem)] md:ml-64 ${!sidebarOpen ? 'md:ml-0' : ''}`}>
                     <div className="flex-1">
                         {children}
                     </div>
@@ -493,25 +511,25 @@ const SemesterView = () => {
 
     return (
         <div className="max-w-5xl mx-auto space-y-6">
-            <div className="flex justify-between items-center pb-4 border-b border-gray-800">
-                <div>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-gray-800">
+                <div className="w-full sm:w-auto">
                     <input 
-                        className="text-3xl font-bold bg-transparent outline-none border border-transparent focus:border-gray-800 rounded px-2 -ml-2 hover:bg-gray-900/50 transition-colors" 
+                        className="text-2xl sm:text-3xl font-bold w-full sm:w-auto bg-transparent outline-none border border-transparent focus:border-gray-800 rounded px-2 -ml-2 hover:bg-gray-900/50 transition-colors" 
                         value={semNameForm} 
                         onChange={e => setSemNameForm(e.target.value)} 
                         onBlur={handleSemNameBlur}
                     />
                     <div className="text-gray-400 mt-2 flex space-x-6 px-2">
-                        <span>SGPA: <strong className="text-neonEmerald text-lg ml-1">{sgpa}</strong></span>
+                        <span>SGPA: <strong className="text-neonEmerald text-base sm:text-lg ml-1">{sgpa}</strong></span>
                         <span>Credits: <strong className="text-white ml-1">{totalCredits}</strong></span>
                     </div>
                 </div>
-                <div className="flex space-x-3">
-                    <button onClick={() => setShowAddCourse(!showAddCourse)} className="bg-neonBlue hover:bg-blue-600 text-white px-4 py-2 rounded font-medium transition-colors">
+                <div className="flex space-x-3 w-full sm:w-auto">
+                    <button onClick={() => setShowAddCourse(!showAddCourse)} className="flex-1 sm:flex-none bg-neonBlue hover:bg-blue-600 text-white px-4 py-2 rounded font-medium transition-colors text-sm sm:text-base">
                         {showAddCourse ? 'Cancel' : 'Add Course'}
                     </button>
-                    <button onClick={handleDeleteSem} className="bg-gray-800 hover:bg-red-900/50 text-red-500 hover:text-red-400 px-4 py-2 rounded transition-colors">
-                        Delete Semester
+                    <button onClick={handleDeleteSem} className="flex-1 sm:flex-none bg-gray-800 hover:bg-red-900/50 text-red-500 hover:text-red-400 px-4 py-2 rounded transition-colors text-sm sm:text-base">
+                        Delete
                     </button>
                 </div>
             </div>
@@ -729,8 +747,8 @@ const CourseView = () => {
     return (
         <div className="max-w-6xl mx-auto space-y-6">
             {/* Header */}
-            <div className="flex justify-between items-start pb-6 border-b border-gray-800">
-                <div className="flex-1 mr-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center pb-6 border-b border-gray-800 gap-6">
+                <div className="flex-1 w-full md:w-auto mr-0 md:mr-8">
                     <div className="flex items-center space-x-3 mb-2">
                         <input 
                             className="bg-gray-800 text-neonBlue px-2 py-1 rounded text-xs font-bold tracking-wider outline-none w-20 border border-transparent focus:border-gray-600 hover:bg-gray-700 transition-colors" 
@@ -751,20 +769,20 @@ const CourseView = () => {
                         </div>
                     </div>
                     <input 
-                        className="text-3xl font-bold text-white bg-transparent outline-none w-full border border-transparent focus:border-gray-800 rounded px-2 -ml-2 hover:bg-gray-900/50 transition-colors" 
+                        className="text-2xl sm:text-3xl font-bold text-white bg-transparent outline-none w-full border border-transparent focus:border-gray-800 rounded px-2 -ml-2 hover:bg-gray-900/50 transition-colors" 
                         value={courseFormData.course_name} 
                         onChange={e => handleCourseChange('course_name', e.target.value)} 
                         onBlur={handleCourseBlur}
                     />
                 </div>
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center justify-between w-full md:w-auto space-x-4">
                     <div className="relative">
                         <div 
                             onClick={() => setShowGradeDropdown(!showGradeDropdown)}
-                            className="text-center bg-gray-900 px-6 py-4 rounded-xl border border-gray-800 hover:border-neonEmerald cursor-pointer transition-all flex flex-col items-center justify-center min-w-[120px] shadow-lg group"
+                            className="text-center bg-gray-900 px-4 sm:px-6 py-3 sm:py-4 rounded-xl border border-gray-800 hover:border-neonEmerald cursor-pointer transition-all flex flex-col items-center justify-center min-w-[100px] sm:min-w-[120px] shadow-lg group"
                         >
                             <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1 group-hover:text-gray-400">Grade</div>
-                            <div className="text-5xl font-black text-neonEmerald" style={{ fontFamily: "'Tanker', sans-serif" }}>
+                            <div className="text-4xl sm:text-5xl font-black text-neonEmerald" style={{ fontFamily: "'Tanker', sans-serif" }}>
                                 {course.grade || 'N/A'}
                             </div>
                         </div>
@@ -772,7 +790,7 @@ const CourseView = () => {
                         {showGradeDropdown && (
                             <>
                                 <div className="fixed inset-0 z-40" onClick={() => setShowGradeDropdown(false)}></div>
-                                <div className="absolute top-full mt-2 right-0 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl p-2 grid grid-cols-3 gap-2 z-50 w-64 animate-fade-in">
+                                <div className="absolute top-full mt-2 right-0 md:left-0 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl p-2 grid grid-cols-3 gap-2 z-50 w-64 animate-fade-in">
                                     {GRADES.map(g => (
                                         <button
                                             key={g}
@@ -792,10 +810,10 @@ const CourseView = () => {
                         )}
                     </div>
                     <div className="flex flex-col space-y-2">
-                        <button onClick={() => setShowAddModal(true)} className="bg-neonBlue hover:bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
+                        <button onClick={() => setShowAddModal(true)} className="bg-neonBlue hover:bg-blue-600 text-white px-3 sm:px-4 py-2 rounded text-xs sm:text-sm font-medium transition-colors">
                             Add Assessment
                         </button>
-                        <button onClick={handleDeleteCourse} className="text-gray-500 hover:text-red-500 text-sm transition-colors text-right">
+                        <button onClick={handleDeleteCourse} className="text-gray-500 hover:text-red-500 text-xs sm:text-sm transition-colors text-right">
                             Delete Course
                         </button>
                     </div>
@@ -840,8 +858,8 @@ const CourseView = () => {
             )}
 
             {/* Assessments Table */}
-            <div className="glass-panel rounded-xl overflow-hidden border border-gray-800 mt-8">
-                <table className="w-full text-left border-collapse">
+            <div className="glass-panel rounded-xl overflow-hidden border border-gray-800 mt-8 overflow-x-auto">
+                <table className="w-full text-left border-collapse whitespace-nowrap min-w-[800px]">
                     <thead>
                         <tr className="bg-gray-900 border-b border-gray-800">
                             <th className="p-4 font-semibold text-gray-400 text-sm">Category</th>
