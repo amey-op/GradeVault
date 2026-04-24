@@ -752,9 +752,16 @@ const CourseView = () => {
     };
 
     const editAssessment = (ass) => {
-        setFormData({ ...ass });
-        setEditingId(ass.id);
-        setShowAddModal(true);
+    setFormData({
+        category: ass.category,
+        name: ass.name,
+        weightage: ass.weightage ?? '',
+        marks_obtained: ass.marks_obtained ?? '',
+        max_marks: ass.max_marks ?? '',
+        average_marks: ass.average_marks ?? ''
+    });
+    setEditingId(ass.id);
+    setShowAddModal(true);
     };
 
     return (
