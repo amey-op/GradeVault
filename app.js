@@ -577,7 +577,7 @@ const Home = () => {
         <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl sm:text-3xl font-bold flex flex-col md:flex-row items-start md:items-center">
-                    <span>Hello {profile?.username || 'User'} 👋 Dashboard</span>
+                    <span>Hello {profile?.username || 'User'} 👋</span>
                     {importing && <span className="md:ml-4 text-sm text-neonEmerald animate-pulse mt-1 md:mt-0">Importing...</span>}
                 </h1>
             </div>
@@ -1087,7 +1087,7 @@ const CourseView = () => {
                         {showGradeDropdown && (
                             <>
                                 <div className="fixed inset-0 z-40" onClick={() => setShowGradeDropdown(false)}></div>
-                                <div className="absolute top-full mt-2 right-0 md:left-0 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl p-2 grid grid-cols-3 gap-2 z-50 w-64 animate-fade-in">
+                                <div className="absolute top-full mt-2 left-0 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl p-2 grid grid-cols-3 gap-2 z-50 w-64 animate-fade-in">
                                     {GRADES.map(g => (
                                         <button
                                             key={g}
