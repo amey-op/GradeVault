@@ -133,7 +133,8 @@ const Icons = {
     Linkedin: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>,
     Menu: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>,
     Download: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>,
-    Logout: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    Logout: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
+    ChevronDown: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
 };
 
 const Graph = ({ type, data, options }) => {
@@ -183,15 +184,17 @@ const Topbar = ({ sidebarOpen, setSidebarOpen }) => {
                     </button>
                 )}
             </div>
-            <div className="flex items-center">
+            <div className="flex items-center space-x-3 md:space-x-4">
                 <div className="text-lg md:text-xl font-black tracking-wider text-white truncate">GradeVault</div>
+                <TopbarProfile />
             </div>
         </div>
     );
 };
 
-const SidebarProfile = () => {
+const TopbarProfile = () => {
     const { profile, session } = useContext(DataContext);
+    const [showMenu, setShowMenu] = useState(false);
     const [showUsernameModal, setShowUsernameModal] = useState(false);
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [usernameForm, setUsernameForm] = useState(profile?.username || '');
@@ -252,17 +255,36 @@ const SidebarProfile = () => {
     if (!profile) return null;
 
     return (
-        <div className="p-4 border-t border-gray-800 flex flex-col space-y-2 shrink-0 bg-darkBase">
-            <div className="text-gray-400 text-xs px-2 truncate mb-2">Logged in as <span className="text-white font-bold">{profile.username}</span></div>
-            <button onClick={() => setShowUsernameModal(true)} className="text-left px-2 py-1 text-sm text-gray-400 hover:text-white transition-colors">Change Username</button>
-            <button onClick={() => setShowPasswordModal(true)} className="text-left px-2 py-1 text-sm text-gray-400 hover:text-white transition-colors">Change Password</button>
-            <button onClick={handleDeleteAccount} className="text-left px-2 py-1 text-sm text-red-500 hover:text-red-400 transition-colors">Delete Account</button>
-            <button onClick={async () => await supabase.auth.signOut()} className="text-left px-2 py-1 text-sm text-gray-400 hover:text-white transition-colors flex items-center space-x-2 md:hidden">
-                <Icons.Logout /> <span>Logout</span>
+        <div className="relative">
+            <button 
+                onClick={() => setShowMenu(!showMenu)} 
+                className="flex items-center space-x-1 text-white bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded-lg transition-colors border border-gray-700 font-medium text-sm"
+            >
+                <span>MyProfile</span>
+                <Icons.ChevronDown />
             </button>
             
+            {showMenu && (
+                <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)}></div>
+                    <div className="absolute right-0 mt-2 w-48 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-50 py-2 animate-fade-in flex flex-col">
+                        <div className="px-4 py-2 border-b border-gray-800 text-xs text-gray-400 mb-1">
+                            Signed in as <span className="text-white font-bold block truncate">{profile.username}</span>
+                        </div>
+                        <button onClick={() => { setShowMenu(false); setShowUsernameModal(true); }} className="text-left px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800 transition-colors">Change Username</button>
+                        <button onClick={() => { setShowMenu(false); setShowPasswordModal(true); }} className="text-left px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800 transition-colors">Change Password</button>
+                        <button onClick={() => { setShowMenu(false); handleDeleteAccount(); }} className="text-left px-4 py-2 text-sm text-red-500 hover:text-red-400 hover:bg-gray-800 transition-colors">Delete Account</button>
+                        <div className="border-t border-gray-800 mt-1 pt-1">
+                            <button onClick={async () => await supabase.auth.signOut()} className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800 transition-colors flex items-center space-x-2">
+                                <Icons.Logout /> <span>Logout</span>
+                            </button>
+                        </div>
+                    </div>
+                </>
+            )}
+
             {showUsernameModal && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
                     <div className="glass-panel w-full max-w-sm rounded-xl p-6 border border-gray-700 shadow-2xl">
                         <h2 className="text-xl font-bold mb-4 text-white">Change Username</h2>
                         <form onSubmit={handleChangeUsername} className="space-y-4">
@@ -280,7 +302,7 @@ const SidebarProfile = () => {
             )}
 
             {showPasswordModal && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
                     <div className="glass-panel w-full max-w-sm rounded-xl p-6 border border-gray-700 shadow-2xl">
                         <h2 className="text-xl font-bold mb-4 text-white">Change Password</h2>
                         <form onSubmit={handleChangePassword} className="space-y-4">
@@ -301,7 +323,7 @@ const SidebarProfile = () => {
                 </div>
             )}
             
-            <ConfirmModal {...modalConfig} onCancel={() => setModalConfig(prev => ({ ...prev, open: false }))} />
+            <div className="z-[70] relative"><ConfirmModal {...modalConfig} onCancel={() => setModalConfig(prev => ({ ...prev, open: false }))} /></div>
         </div>
     );
 };
@@ -351,7 +373,6 @@ const Sidebar = ({ isOpen }) => {
                     )}
                 </div>
             </div>
-            <SidebarProfile />
         </div>
     );
 };
@@ -405,7 +426,7 @@ const Layout = ({ children }) => {
 };
 
 const Home = () => {
-    const { semesters } = useContext(DataContext);
+    const { semesters, profile } = useContext(DataContext);
     const { cgpa, totalCredits } = useMemo(() => getCGPAMetrics(semesters), [semesters]);
 
     const { topCourses, droppingCourses } = useMemo(() => {
@@ -555,7 +576,10 @@ const Home = () => {
     return (
         <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
             <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold flex items-center">Dashboard {importing && <span className="ml-4 text-sm text-neonEmerald animate-pulse">Importing...</span>}</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold flex flex-col md:flex-row items-start md:items-center">
+                    <span>Hello {profile?.username || 'User'} 👋 Dashboard</span>
+                    {importing && <span className="md:ml-4 text-sm text-neonEmerald animate-pulse mt-1 md:mt-0">Importing...</span>}
+                </h1>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
