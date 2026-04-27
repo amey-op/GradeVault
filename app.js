@@ -10,14 +10,17 @@ const api = {
     getSemesters: () => supabase.from('semesters').select('*, courses(*, assessments(*))').order('id'),
     createSemester: async (data) => {
         const { data: { session } } = await supabase.auth.getSession();
-        return supabase.from('semesters').insert({ ...data, user_id: session?.user?.id });
+        return supabase.from('semesters').insert({ ...data, user_id: session?.user?.id }).select();
     },
     deleteSemester: (id) => supabase.from('semesters').delete().eq('id', id),
     createCourse: (semId, data) => supabase.from('courses').insert({ ...data, semester_id: semId }),
     updateCourse: (id, data) => {
-        const payload = { ...data };
-        delete payload.assessments;
-        delete payload.semesterName;
+        const payload = {
+            course_name: data.course_name,
+            course_code: data.course_code,
+            credits: parseInt(data.credits, 10),
+            grade: data.grade
+        };
         return supabase.from('courses').update(payload).eq('id', id);
     },
     deleteCourse: (id) => supabase.from('courses').delete().eq('id', id),
@@ -97,6 +100,28 @@ const getCGPAMetrics = (semesters) => {
 // --- Contexts ---
 const DataContext = createContext(null);
 
+const ConfirmModal = ({ open, title, message, onConfirm, onCancel, confirmText = "Confirm", cancelText = "Cancel", isAlert = false }) => {
+    if (!open) return null;
+    return (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="glass-panel w-full max-w-sm rounded-xl p-6 border border-gray-700 shadow-2xl animate-fade-in">
+                <h3 className="text-xl font-bold mb-2 text-white">{title}</h3>
+                <p className="text-gray-400 text-sm mb-6 whitespace-pre-wrap">{message}</p>
+                <div className="flex justify-end space-x-3">
+                    {!isAlert && (
+                        <button onClick={onCancel} className="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition-colors text-sm font-medium">
+                            {cancelText}
+                        </button>
+                    )}
+                    <button onClick={onConfirm} className={`px-4 py-2 text-white rounded transition-colors text-sm font-medium ${isAlert ? 'bg-neonBlue hover:bg-blue-600' : 'bg-neonRed hover:bg-red-600'}`}>
+                        {confirmText}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // --- Components ---
 
 const Icons = {
@@ -143,9 +168,8 @@ const Graph = ({ type, data, options }) => {
 const Topbar = ({ sidebarOpen, setSidebarOpen }) => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { profile } = useContext(DataContext);
     return (
-        <div className="h-16 border-b border-gray-800 glass-panel fixed top-0 w-full z-40 flex items-center px-4 md:px-6 justify-between">
+        <div className="h-16 border-b border-gray-800 glass-panel fixed top-0 w-full z-50 flex items-center px-4 md:px-6 justify-between">
             <div className="flex items-center space-x-2 md:space-x-4">
                 <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-gray-400 hover:text-white transition-colors flex items-center justify-center p-1 md:p-0">
                     <Icons.Menu />
@@ -159,17 +183,125 @@ const Topbar = ({ sidebarOpen, setSidebarOpen }) => {
                     </button>
                 )}
             </div>
-            <div className="flex items-center space-x-4 md:space-x-6">
-                {profile && (
-                    <div className="text-gray-400 text-sm hidden md:block">
-                        Welcome, <span className="text-white font-bold">{profile.username}</span>
-                    </div>
-                )}
+            <div className="flex items-center">
                 <div className="text-lg md:text-xl font-black tracking-wider text-white truncate">GradeVault</div>
-                <button onClick={async () => await supabase.auth.signOut()} className="text-gray-400 hover:text-white transition-colors flex items-center space-x-2 border border-gray-800 hover:border-gray-600 rounded px-2 py-1 md:px-3 md:py-1.5 text-xs md:text-sm">
-                    <Icons.Logout /> <span className="hidden sm:inline">Logout</span>
-                </button>
             </div>
+        </div>
+    );
+};
+
+const SidebarProfile = () => {
+    const { profile, session } = useContext(DataContext);
+    const [showUsernameModal, setShowUsernameModal] = useState(false);
+    const [showPasswordModal, setShowPasswordModal] = useState(false);
+    const [usernameForm, setUsernameForm] = useState(profile?.username || '');
+    const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' });
+    const [modalConfig, setModalConfig] = useState({ open: false, title: '', message: '', onConfirm: null, isAlert: false });
+
+    useEffect(() => {
+        if (profile) setUsernameForm(profile.username);
+    }, [profile]);
+
+    const handleChangeUsername = async (e) => {
+        e.preventDefault();
+        await supabase.from('profiles').update({ username: usernameForm }).eq('id', session.user.id);
+        setShowUsernameModal(false);
+        window.location.reload();
+    };
+
+    const handleChangePassword = async (e) => {
+        e.preventDefault();
+        if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+            setModalConfig({
+                open: true,
+                title: 'Password Mismatch',
+                message: 'Passwords do not match.',
+                isAlert: true,
+                confirmText: 'OK',
+                onConfirm: () => setModalConfig(prev => ({ ...prev, open: false }))
+            });
+            return;
+        }
+        await supabase.auth.updateUser({ password: passwordForm.newPassword });
+        setShowPasswordModal(false);
+        setPasswordForm({ newPassword: '', confirmPassword: '' });
+        setModalConfig({
+            open: true,
+            title: 'Password Updated',
+            message: 'Your password has been successfully updated.',
+            isAlert: true,
+            confirmText: 'OK',
+            onConfirm: () => setModalConfig(prev => ({ ...prev, open: false }))
+        });
+    };
+
+    const handleDeleteAccount = () => {
+        setModalConfig({
+            open: true,
+            title: 'Delete Account',
+            message: 'Are you absolutely sure you want to delete your account? This action cannot be undone and will delete all your data.',
+            confirmText: 'Delete Everything',
+            onConfirm: async () => {
+                setModalConfig(prev => ({ ...prev, open: false }));
+                await supabase.from('semesters').delete().eq('user_id', session.user.id);
+                await supabase.auth.signOut();
+            }
+        });
+    };
+
+    if (!profile) return null;
+
+    return (
+        <div className="p-4 border-t border-gray-800 flex flex-col space-y-2 shrink-0 bg-darkBase">
+            <div className="text-gray-400 text-xs px-2 truncate mb-2">Logged in as <span className="text-white font-bold">{profile.username}</span></div>
+            <button onClick={() => setShowUsernameModal(true)} className="text-left px-2 py-1 text-sm text-gray-400 hover:text-white transition-colors">Change Username</button>
+            <button onClick={() => setShowPasswordModal(true)} className="text-left px-2 py-1 text-sm text-gray-400 hover:text-white transition-colors">Change Password</button>
+            <button onClick={handleDeleteAccount} className="text-left px-2 py-1 text-sm text-red-500 hover:text-red-400 transition-colors">Delete Account</button>
+            <button onClick={async () => await supabase.auth.signOut()} className="text-left px-2 py-1 text-sm text-gray-400 hover:text-white transition-colors flex items-center space-x-2 md:hidden">
+                <Icons.Logout /> <span>Logout</span>
+            </button>
+            
+            {showUsernameModal && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="glass-panel w-full max-w-sm rounded-xl p-6 border border-gray-700 shadow-2xl">
+                        <h2 className="text-xl font-bold mb-4 text-white">Change Username</h2>
+                        <form onSubmit={handleChangeUsername} className="space-y-4">
+                            <div>
+                                <label className="block text-xs text-gray-400 mb-1">New Username</label>
+                                <input required type="text" className="w-full bg-darkBase border border-gray-700 rounded p-2 text-white focus:border-neonEmerald outline-none" value={usernameForm} onChange={e => setUsernameForm(e.target.value)} />
+                            </div>
+                            <div className="flex justify-end space-x-3 pt-4 border-t border-gray-800">
+                                <button type="button" onClick={() => setShowUsernameModal(false)} className="px-4 py-2 text-gray-400 hover:text-white transition-colors">Cancel</button>
+                                <button type="submit" className="bg-neonEmerald hover:bg-emerald-500 text-black font-bold px-4 py-2 rounded transition-colors">Save</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {showPasswordModal && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="glass-panel w-full max-w-sm rounded-xl p-6 border border-gray-700 shadow-2xl">
+                        <h2 className="text-xl font-bold mb-4 text-white">Change Password</h2>
+                        <form onSubmit={handleChangePassword} className="space-y-4">
+                            <div>
+                                <label className="block text-xs text-gray-400 mb-1">New Password</label>
+                                <input required type="password" minLength="6" className="w-full bg-darkBase border border-gray-700 rounded p-2 text-white focus:border-neonEmerald outline-none" value={passwordForm.newPassword} onChange={e => setPasswordForm({ ...passwordForm, newPassword: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-400 mb-1">Confirm Password</label>
+                                <input required type="password" minLength="6" className="w-full bg-darkBase border border-gray-700 rounded p-2 text-white focus:border-neonEmerald outline-none" value={passwordForm.confirmPassword} onChange={e => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })} />
+                            </div>
+                            <div className="flex justify-end space-x-3 pt-4 border-t border-gray-800">
+                                <button type="button" onClick={() => setShowPasswordModal(false)} className="px-4 py-2 text-gray-400 hover:text-white transition-colors">Cancel</button>
+                                <button type="submit" className="bg-neonEmerald hover:bg-emerald-500 text-black font-bold px-4 py-2 rounded transition-colors">Save</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+            
+            <ConfirmModal {...modalConfig} onCancel={() => setModalConfig(prev => ({ ...prev, open: false }))} />
         </div>
     );
 };
@@ -177,39 +309,49 @@ const Topbar = ({ sidebarOpen, setSidebarOpen }) => {
 const Sidebar = ({ isOpen }) => {
     const { semesters, loadData } = useContext(DataContext);
     const [newSemName, setNewSemName] = useState("");
+    const [showAddSem, setShowAddSem] = useState(false);
 
     const handleAddSem = async (e) => {
         e.preventDefault();
         if (!newSemName) return;
         await api.createSemester({ name: newSemName });
         setNewSemName("");
+        setShowAddSem(false);
         loadData();
     };
 
     return (
-        <div className={`w-64 border-r border-gray-800 glass-panel fixed left-0 top-16 bottom-0 overflow-y-auto flex flex-col pt-6 transition-transform duration-300 z-30 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-            <div className="px-6 mb-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Semesters</div>
-            <div className="flex-1">
+        <div className={`w-64 border-r border-gray-800 glass-panel fixed left-0 top-16 bottom-0 flex flex-col transition-transform duration-300 z-50 md:z-30 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <div className="pt-6 px-6 mb-4 text-xs font-bold text-gray-500 uppercase tracking-wider shrink-0">Semesters</div>
+            <div className="flex-1 overflow-y-auto overflow-x-hidden pb-4">
                 {semesters.map(s => (
                     <Link key={s.id} to={`/semester/${s.id}`} className="block px-6 py-3 hover:bg-gray-800 hover:text-neonEmerald transition-colors border-l-2 border-transparent hover:border-neonEmerald text-gray-300">
                         {s.name}
                     </Link>
                 ))}
+                <div className="px-6 py-2">
+                    {showAddSem ? (
+                        <form onSubmit={handleAddSem} className="flex space-x-2 animate-fade-in mt-1">
+                            <input 
+                                type="text" 
+                                value={newSemName}
+                                onChange={e => setNewSemName(e.target.value)}
+                                placeholder="New Semester..."
+                                autoFocus
+                                className="bg-darkSurface border border-gray-700 rounded px-2 py-1 text-sm w-full focus:outline-none focus:border-neonEmerald text-white"
+                            />
+                            <button type="submit" className="bg-neonEmerald text-black rounded p-1 hover:bg-emerald-400 transition-colors">
+                                <Icons.Plus />
+                            </button>
+                        </form>
+                    ) : (
+                        <button onClick={() => setShowAddSem(true)} className="text-gray-400 hover:text-white text-sm flex items-center transition-colors group mt-1">
+                            <span className="opacity-50 group-hover:opacity-100 mr-1">+</span> Add Semester
+                        </button>
+                    )}
+                </div>
             </div>
-            <div className="p-4 border-t border-gray-800">
-                <form onSubmit={handleAddSem} className="flex space-x-2">
-                    <input 
-                        type="text" 
-                        value={newSemName}
-                        onChange={e => setNewSemName(e.target.value)}
-                        placeholder="New Semester..."
-                        className="bg-darkSurface border border-gray-700 rounded px-3 py-1.5 text-sm w-full focus:outline-none focus:border-neonEmerald text-white"
-                    />
-                    <button type="submit" className="bg-neonEmerald text-black rounded p-1.5 hover:bg-emerald-400 transition-colors">
-                        <Icons.Plus />
-                    </button>
-                </form>
-            </div>
+            <SidebarProfile />
         </div>
     );
 };
@@ -236,7 +378,7 @@ const Layout = ({ children }) => {
             <Topbar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
             <div className="flex flex-1 pt-16 relative w-full">
                 {sidebarOpen && (
-                    <div className="fixed inset-0 bg-black/60 z-20 md:hidden mt-16" onClick={() => setSidebarOpen(false)}></div>
+                    <div className="fixed inset-0 bg-black/80 z-40 md:hidden mt-16" onClick={() => setSidebarOpen(false)}></div>
                 )}
                 <Sidebar isOpen={sidebarOpen} />
                 <div className={`transition-all duration-300 p-4 sm:p-6 md:p-8 w-full bg-darkBase flex flex-col min-h-[calc(100vh-4rem)] md:ml-64 ${!sidebarOpen ? 'md:ml-0' : ''}`}>
@@ -306,12 +448,87 @@ const Home = () => {
         }
     };
 
+    const fileInputRef = React.useRef(null);
+    const { loadData } = useContext(DataContext);
+    const [modalConfig, setModalConfig] = useState({ open: false, title: '', message: '', onConfirm: null, isAlert: false });
+    const [importing, setImporting] = useState(false);
+
     const handleDownload = () => {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(semesters, null, 2));
+        const exportData = {
+            template_name: "My Structure",
+            semesters: semesters.map(s => ({
+                name: s.name,
+                courses: s.courses.map(c => ({
+                    course_name: c.course_name,
+                    course_code: c.course_code,
+                    credits: c.credits
+                }))
+            }))
+        };
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
         const dlAnchorElem = document.createElement('a');
         dlAnchorElem.setAttribute("href", dataStr);
-        dlAnchorElem.setAttribute("download", "gradevault_export.json");
+        dlAnchorElem.setAttribute("download", "gradevault_template.json");
         dlAnchorElem.click();
+    };
+
+    const handleImportClick = () => {
+        if (fileInputRef.current) fileInputRef.current.click();
+    };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            try {
+                const json = JSON.parse(evt.target.result);
+                if (!json.semesters || !Array.isArray(json.semesters)) throw new Error("Invalid JSON structure");
+                
+                let courseCount = 0;
+                json.semesters.forEach(s => {
+                    if (s.courses) courseCount += s.courses.length;
+                });
+
+                setModalConfig({
+                    open: true,
+                    title: 'Import Template',
+                    message: `This will add ${json.semesters.length} semesters and ${courseCount} courses. Continue?`,
+                    confirmText: 'Import',
+                    onConfirm: async () => {
+                        setModalConfig(prev => ({ ...prev, open: false }));
+                        setImporting(true);
+                        try {
+                            for (let s of json.semesters) {
+                                const semRes = await api.createSemester({ name: s.name });
+                                if (semRes.data && semRes.data[0] && s.courses) {
+                                    const semId = semRes.data[0].id;
+                                    for (let c of s.courses) {
+                                        await api.createCourse(semId, {
+                                            course_name: c.course_name,
+                                            course_code: c.course_code,
+                                            credits: parseInt(c.credits) || 0
+                                        });
+                                    }
+                                }
+                            }
+                            await loadData();
+                        } catch (err) {
+                            setModalConfig({ open: true, title: 'Error', message: "Error importing: " + err.message, isAlert: true, confirmText: 'OK', onConfirm: () => setModalConfig(prev => ({...prev, open: false})) });
+                        } finally {
+                            setImporting(false);
+                            if (fileInputRef.current) fileInputRef.current.value = '';
+                        }
+                    }
+                });
+            } catch (err) {
+                setModalConfig({
+                    open: true, title: 'Error', message: 'Invalid JSON format.', isAlert: true, confirmText: 'OK', onConfirm: () => setModalConfig(prev => ({...prev, open: false}))
+                });
+                if (fileInputRef.current) fileInputRef.current.value = '';
+            }
+        };
+        reader.readAsText(file);
     };
 
     const ungradedCourses = useMemo(() => {
@@ -338,10 +555,7 @@ const Home = () => {
     return (
         <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
             <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold">Dashboard</h1>
-                <button onClick={handleDownload} className="flex items-center space-x-2 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium">
-                    <Icons.Download /> <span>Export JSON</span>
-                </button>
+                <h1 className="text-3xl font-bold flex items-center">Dashboard {importing && <span className="ml-4 text-sm text-neonEmerald animate-pulse">Importing...</span>}</h1>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -439,6 +653,16 @@ const Home = () => {
                 )}
             </div>
 
+            <div className="flex space-x-4 mb-2">
+                <button onClick={handleDownload} className="border border-gray-600 text-gray-300 hover:text-white hover:border-white px-4 py-1.5 rounded-lg transition-colors text-sm font-medium flex items-center space-x-2">
+                    <Icons.Download /> <span>Share My Structure</span>
+                </button>
+                <button onClick={handleImportClick} className="border border-gray-600 text-gray-300 hover:text-white hover:border-white px-4 py-1.5 rounded-lg transition-colors text-sm font-medium flex items-center space-x-2">
+                    <Icons.Plus /> <span>Import Template</span>
+                </button>
+                <input type="file" className="hidden" ref={fileInputRef} onChange={handleFileChange} accept=".json" />
+            </div>
+
             <div>
                 <h2 className="text-xl font-bold mb-4">Semesters Breakdown</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -469,6 +693,7 @@ const Home = () => {
                     )}
                 </div>
             </div>
+            <ConfirmModal {...modalConfig} onCancel={() => setModalConfig(prev => ({ ...prev, open: false }))} />
         </div>
     );
 };
@@ -483,6 +708,7 @@ const SemesterView = () => {
     const [showAddCourse, setShowAddCourse] = useState(false);
     const [newCourse, setNewCourse] = useState({ course_name: '', course_code: '', credits: '', grade: '' });
     const [semNameForm, setSemNameForm] = useState('');
+    const [modalConfig, setModalConfig] = useState({ open: false, title: '', message: '', onConfirm: null, isAlert: false });
     
     useEffect(() => {
         if (sem) setSemNameForm(sem.name);
@@ -508,12 +734,18 @@ const SemesterView = () => {
         await loadData();
     };
 
-    const handleDeleteSem = async () => {
-        if (confirm("Delete this semester and all its courses?")) {
-            await api.deleteSemester(sem.id);
-            loadData();
-            navigate('/');
-        }
+    const handleDeleteSem = () => {
+        setModalConfig({
+            open: true,
+            title: 'Delete Semester',
+            message: 'Delete this semester and all its courses?',
+            onConfirm: async () => {
+                setModalConfig(prev => ({ ...prev, open: false }));
+                await api.deleteSemester(sem.id);
+                loadData();
+                navigate('/');
+            }
+        });
     };
 
     return (
@@ -611,6 +843,7 @@ const SemesterView = () => {
                     </div>
                 )}
             </div>
+            <ConfirmModal {...modalConfig} onCancel={() => setModalConfig(prev => ({ ...prev, open: false }))} />
         </div>
     );
 };
@@ -640,6 +873,7 @@ const CourseView = () => {
     const GRADES = ["N/A", "A", "A-", "B", "B-", "C", "C-", "D", "F"];
 
     const [courseFormData, setCourseFormData] = useState({ course_name: '', course_code: '', credits: '' });
+    const [modalConfig, setModalConfig] = useState({ open: false, title: '', message: '', onConfirm: null, isAlert: false });
 
     useEffect(() => {
         if (course) {
@@ -713,7 +947,14 @@ const CourseView = () => {
             if (a.id !== editingId) currentWeightage += a.weightage;
         });
         if (currentWeightage + parseFloat(formData.weightage) > 100) {
-            alert(`Total weightage cannot exceed 100%. Current: ${currentWeightage}%, Adding: ${formData.weightage}%`);
+            setModalConfig({
+                open: true,
+                title: 'Weightage Exceeded',
+                message: `Total weightage cannot exceed 100%. Current: ${currentWeightage}%, Adding: ${formData.weightage}%`,
+                isAlert: true,
+                confirmText: 'OK',
+                onConfirm: () => setModalConfig(prev => ({ ...prev, open: false }))
+            });
             return;
         }
 
@@ -736,19 +977,31 @@ const CourseView = () => {
         await loadData();
     };
 
-    const handleDeleteCourse = async () => {
-        if(confirm("Delete this course and all assessments?")) {
-            await api.deleteCourse(course.id);
-            loadData();
-            navigate(`/semester/${parentSem.id}`);
-        }
+    const handleDeleteCourse = () => {
+        setModalConfig({
+            open: true,
+            title: 'Delete Course',
+            message: 'Delete this course and all assessments?',
+            onConfirm: async () => {
+                setModalConfig(prev => ({ ...prev, open: false }));
+                await api.deleteCourse(course.id);
+                loadData();
+                navigate(`/semester/${parentSem.id}`);
+            }
+        });
     };
 
-    const handleDeleteAssessment = async (assId) => {
-        if(confirm("Delete this assessment?")) {
-            await api.deleteAssessment(assId);
-            loadData();
-        }
+    const handleDeleteAssessment = (assId) => {
+        setModalConfig({
+            open: true,
+            title: 'Delete Assessment',
+            message: 'Delete this assessment?',
+            onConfirm: async () => {
+                setModalConfig(prev => ({ ...prev, open: false }));
+                await api.deleteAssessment(assId);
+                loadData();
+            }
+        });
     };
 
     const editAssessment = (ass) => {
@@ -769,7 +1022,7 @@ const CourseView = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center pb-6 border-b border-gray-800 gap-6">
                 <div className="flex-1 w-full md:w-auto mr-0 md:mr-8">
-                    <div className="flex items-center space-x-3 mb-2">
+                    <div className="flex flex-col md:flex-row items-start md:items-center md:space-x-3 space-y-2 md:space-y-0 mb-2">
                         <input 
                             className="bg-gray-800 text-neonBlue px-2 py-1 rounded text-xs font-bold tracking-wider outline-none w-20 border border-transparent focus:border-gray-600 hover:bg-gray-700 transition-colors" 
                             value={courseFormData.course_code} 
@@ -879,7 +1132,7 @@ const CourseView = () => {
 
             {/* Assessments Table */}
             <div className="glass-panel rounded-xl overflow-hidden border border-gray-800 mt-8 overflow-x-auto">
-                <table className="w-full text-left border-collapse whitespace-nowrap min-w-[800px]">
+                <table className="w-full text-left border-collapse whitespace-nowrap min-w-[800px] hidden md:table">
                     <thead>
                         <tr className="bg-gray-900 border-b border-gray-800">
                             <th className="p-4 font-semibold text-gray-400 text-sm">Category</th>
@@ -934,6 +1187,44 @@ const CourseView = () => {
                         )}
                     </tbody>
                 </table>
+
+                {/* Mobile Cards */}
+                <div className="md:hidden flex flex-col p-4 space-y-4">
+                    {categories.map(category => (
+                        <React.Fragment key={category}>
+                            {groupedAssessments[category].map(ass => {
+                                const hasAvg = ass.average_marks !== null && ass.average_marks !== "";
+                                const assGained = (ass.marks_obtained / ass.max_marks) * ass.weightage;
+                                const assAvgGained = hasAvg ? (ass.average_marks / ass.max_marks) * ass.weightage : 0;
+                                const assLost = ass.weightage - assGained;
+                                const assDeviation = hasAvg ? assGained - assAvgGained : null;
+                                return (
+                                    <div key={ass.id} className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div>
+                                                <span className="px-2 py-1 bg-gray-900 text-gray-300 text-[10px] rounded border border-gray-700 uppercase">{ass.category}</span>
+                                                <div className="font-bold text-white mt-1">{ass.name}</div>
+                                            </div>
+                                            <div className="flex space-x-2">
+                                                <button onClick={() => editAssessment(ass)} className="text-gray-400 hover:text-white p-1 text-sm border border-gray-700 rounded px-2">Edit</button>
+                                                <button onClick={() => handleDeleteAssessment(ass.id)} className="text-red-500 hover:text-red-400 p-1 border border-red-900/50 rounded px-2"><Icons.Trash /></button>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2 text-sm mt-3">
+                                            <div><span className="text-gray-500">Marks:</span> <span className="text-white font-medium">{ass.marks_obtained}</span><span className="text-gray-500 text-xs">/{ass.max_marks}</span></div>
+                                            <div><span className="text-gray-500">Weightage:</span> <span className="text-neonBlue font-medium">{ass.weightage}%</span></div>
+                                            <div><span className="text-gray-500">Gained:</span> <span className="text-neonEmerald font-bold">{assGained.toFixed(2)}</span></div>
+                                            <div><span className="text-gray-500">Deviation:</span> <span className="text-purple-400 font-bold">{assDeviation !== null ? (assDeviation > 0 ? '+' : '') + assDeviation.toFixed(2) : '-'}</span></div>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </React.Fragment>
+                    ))}
+                    {course.assessments.length === 0 && (
+                        <div className="text-center p-4 text-gray-500">No assessments recorded yet.</div>
+                    )}
+                </div>
             </div>
 
             {/* Modal */}
@@ -988,6 +1279,7 @@ const CourseView = () => {
                     </div>
                 </div>
             )}
+            <ConfirmModal {...modalConfig} onCancel={() => setModalConfig(prev => ({ ...prev, open: false }))} />
         </div>
     );
 };
@@ -998,6 +1290,7 @@ const Auth = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [modalConfig, setModalConfig] = useState({ open: false, title: '', message: '', onConfirm: null, isAlert: false });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -1018,8 +1311,17 @@ const Auth = () => {
                 }
                 if (data?.user) {
                     await supabase.from('profiles').insert({ id: data.user.id, username });
-                    alert('Signup successful! You can now log in.');
-                    setIsLogin(true);
+                    setModalConfig({
+                        open: true,
+                        title: 'Signup Successful',
+                        message: 'Signup successful! You can now log in.',
+                        isAlert: true,
+                        confirmText: 'OK',
+                        onConfirm: () => {
+                            setModalConfig(prev => ({ ...prev, open: false }));
+                            setIsLogin(true);
+                        }
+                    });
                 }
             }
         } catch (err) {
@@ -1057,6 +1359,7 @@ const Auth = () => {
                     </button>
                 </div>
             </div>
+            <ConfirmModal {...modalConfig} onCancel={() => setModalConfig(prev => ({ ...prev, open: false }))} />
         </div>
     );
 };
@@ -1109,7 +1412,7 @@ const App = () => {
     if (!session) return <Auth />;
 
     return (
-        <DataContext.Provider value={{ semesters, loadData, profile }}>
+        <DataContext.Provider value={{ semesters, loadData, profile, session }}>
             <BrowserRouter>
                 <Layout>
                     <Routes>
