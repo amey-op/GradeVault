@@ -16,30 +16,30 @@ const App = () => {
         return () => subscription.unsubscribe();
     }, []);
 
-    const loadData = async (backgroundRefresh = false) => {
+    const loadData = async () => {
         if (!session) return;
-        if (!backgroundRefresh) setLoading(true);
         try {
             const res = await api.getSemesters();
             setSemesters(res.data || []);
         } catch (err) {
             console.error(err);
         } finally {
-            if (!backgroundRefresh) setLoading(false);
+            setLoading(false);
         }
     };
 
+    const userId = session?.user?.id;
     useEffect(() => {
-        if (session) {
-            supabase.from('profiles').select('username').eq('id', session.user.id).single().then(({data}) => {
+        if (userId) {
+            supabase.from('profiles').select('username').eq('id', userId).single().then(({data}) => {
                 if (data) setProfile(data);
             });
             loadData();
         } else {
             setProfile(null);
-            setLoading(false);
+            if (!session) setLoading(false);
         }
-    }, [session]);
+    }, [userId]);
 
     useEffect(() => {
         const handleVisibilityChange = () => {
@@ -47,7 +47,7 @@ const App = () => {
                 supabase.auth.getSession().then(({ data: { session: newSession } }) => {
                     setSession(newSession);
                     if (newSession) {
-                        loadData(true);
+                        loadData();
                     }
                 });
             }
