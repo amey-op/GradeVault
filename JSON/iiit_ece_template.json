@@ -1,0 +1,86 @@
+{
+  "template_name": "IIIT Hyderabad — B.Tech ECE (2018 V2)",
+  "branch": "ECE",
+  "college": "IIIT Hyderabad",
+  "semesters": [
+    {
+      "name": "Semester 1 — Monsoon (Year 1)",
+      "courses": [
+        { "course_name": "Networks, Signals and Systems",          "course_code": "EC5.101", "credits": 4 },
+        { "course_name": "Real Analysis",                          "course_code": "MA4.101", "credits": 4 },
+        { "course_name": "Digital Systems and Microcontrollers",   "course_code": "EC2.101", "credits": 5 },
+        { "course_name": "Computer Programming",                   "course_code": "CS0.101", "credits": 5 },
+        { "course_name": "Electronic Workshop-1",                  "course_code": "EC2.102", "credits": 2 }
+      ]
+    },
+    {
+      "name": "Semester 2 — Spring (Year 1)",
+      "courses": [
+        { "course_name": "Data Structures and Algorithms",         "course_code": "CS1.201", "credits": 5 },
+        { "course_name": "Linear Algebra",                         "course_code": "MA2.101", "credits": 4 },
+        { "course_name": "Analog Electronic Circuits",             "course_code": "EC2.103", "credits": 5 },
+        { "course_name": "Information and Communication",          "course_code": "EC5.102", "credits": 4 }
+      ]
+    },
+    {
+      "name": "Semester 3 — Monsoon (Year 2)",
+      "courses": [
+        { "course_name": "Probability and Random Processes",       "course_code": "MA6.102", "credits": 4 },
+        { "course_name": "Signal Processing",                      "course_code": "EC5.201", "credits": 5 },
+        { "course_name": "Systems Thinking (Commn, bio, neuro)",   "course_code": "EC5.202", "credits": 4 },
+        { "course_name": "VLSI Design",                            "course_code": "EC6.201", "credits": 4 },
+        { "course_name": "Science-1",                              "course_code": "SC1.110", "credits": 4 }
+      ]
+    },
+    {
+      "name": "Semester 4 — Spring (Year 2)",
+      "courses": [
+        { "course_name": "Communication Theory",                   "course_code": "EC5.203", "credits": 4 },
+        { "course_name": "Stream Foundation-1",                    "course_code": "SF ELEC", "credits": 4 },
+        { "course_name": "Electronic Workshop-2",                  "course_code": "EC2.202", "credits": 4 },
+        { "course_name": "Intro to Human Sciences",                "course_code": "HS8.102", "credits": 4 },
+        { "course_name": "Intro to Processor Architecture",        "course_code": "EC6.202", "credits": 2 }
+      ]
+    },
+    {
+      "name": "Semester 5 — Monsoon (Year 3)",
+      "courses": [
+        { "course_name": "Stream Foundation-2",                    "course_code": "SF ELEC", "credits": 4 },
+        { "course_name": "Stream Elective-1",                      "course_code": "SE ELEC", "credits": 4 },
+        { "course_name": "Maths Elective",                         "course_code": "MA ELEC", "credits": 4 },
+        { "course_name": "Open Elective-1",                        "course_code": "OE ELEC", "credits": 4 },
+        { "course_name": "HSS Elective-1",                         "course_code": "HS ELEC", "credits": 4 }
+      ]
+    },
+    {
+      "name": "Semester 6 — Spring (Year 3)",
+      "courses": [
+        { "course_name": "Open Elective-2",                        "course_code": "OE ELEC", "credits": 4 },
+        { "course_name": "Science-2",                              "course_code": "SC1.111", "credits": 4 },
+        { "course_name": "Stream Elective-2",                      "course_code": "SE ELEC", "credits": 4 },
+        { "course_name": "B.Tech Project (BTP)-1",                 "course_code": "EC9.301", "credits": 2 },
+        { "course_name": "HSS Elective-2",                         "course_code": "HS ELEC", "credits": 4 }
+      ]
+    },
+    {
+      "name": "Semester 7 — Monsoon (Year 4)",
+      "courses": [
+        { "course_name": "Stream Elective-3",                      "course_code": "SE ELEC", "credits": 4 },
+        { "course_name": "Open Elective-3",                        "course_code": "OE ELEC", "credits": 4 },
+        { "course_name": "Science Elective-1",                     "course_code": "SC ELEC", "credits": 4 },
+        { "course_name": "B.Tech Project (BTP)-2",                 "course_code": "EC9.401", "credits": 2 },
+        { "course_name": "Ethics-1",                               "course_code": "ETHICS",  "credits": 2 }
+      ]
+    },
+    {
+      "name": "Semester 8 — Spring (Year 4)",
+      "courses": [
+        { "course_name": "Open Elective-4",                        "course_code": "OE ELEC", "credits": 4 },
+        { "course_name": "Open Elective-5",                        "course_code": "OE ELEC", "credits": 4 },
+        { "course_name": "Science Elective-2",                     "course_code": "SC ELEC", "credits": 4 },
+        { "course_name": "Ethics-2",                               "course_code": "ETHICS",  "credits": 2 },
+        { "course_name": "HSS Elective-3",                         "course_code": "HS ELEC", "credits": 4 }
+      ]
+    }
+  ]
+}

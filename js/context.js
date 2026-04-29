@@ -1,0 +1,1 @@
+const DataContext = createContext(null);

@@ -1,0 +1,105 @@
+{
+  "template_name": "IIIT Hyderabad — Dual Degree CS + CL (2018 V2)",
+  "branch": "CLD",
+  "college": "IIIT Hyderabad",
+  "semesters": [
+    {
+      "name": "Semester 1 — Monsoon (Year 1)",
+      "courses": [
+        { "course_name": "Discrete Structures",                                                "course_code": "MA5.101", "credits": 4 },
+        { "course_name": "Intro to Linguistics-1: Phonetics, Phonology, Morphology and Syntax","course_code": "CL1.101", "credits": 4 },
+        { "course_name": "Computer Programming",                                               "course_code": "CS0.101", "credits": 5 },
+        { "course_name": "Digital Systems and Microcontrollers",                               "course_code": "EC2.101", "credits": 5 }
+      ]
+    },
+    {
+      "name": "Semester 2 — Spring (Year 1)",
+      "courses": [
+        { "course_name": "Linear Algebra",                                                     "course_code": "MA2.101", "credits": 4 },
+        { "course_name": "Introduction to Linguistics-2: Semantics, Discourse and Pragmatics", "course_code": "CL1.102", "credits": 4 },
+        { "course_name": "Computational Linguistics-1: Comp Phon, Morphology and Parsing",    "course_code": "CL3.101", "credits": 4 },
+        { "course_name": "Data Structures and Algorithms",                                     "course_code": "CS1.201", "credits": 5 },
+        { "course_name": "Introduction to Software Systems",                                   "course_code": "CS6.201", "credits": 2 },
+        { "course_name": "Computer Systems Organization",                                      "course_code": "CS2.201", "credits": 4 }
+      ]
+    },
+    {
+      "name": "Semester 3 — Monsoon (Year 2)",
+      "courses": [
+        { "course_name": "Probability and Statistics",                                         "course_code": "MA6.101", "credits": 4 },
+        { "course_name": "Language and Society",                                               "course_code": "CS2.203", "credits": 4 },
+        { "course_name": "Computational Linguistics-2: Comp Semantics and Discourse Parsing",  "course_code": "CL3.202", "credits": 4 },
+        { "course_name": "Algorithm Analysis and Design",                                      "course_code": "CS1.301", "credits": 4 },
+        { "course_name": "Automata Theory",                                                    "course_code": "CS1.302", "credits": 2 },
+        { "course_name": "Data and Applications",                                              "course_code": "CS4.301", "credits": 2 }
+      ]
+    },
+    {
+      "name": "Semester 4 — Spring (Year 2)",
+      "courses": [
+        { "course_name": "Digital Signal Analysis",                                            "course_code": "CS7.303", "credits": 2 },
+        { "course_name": "Language Typology and Universals",                                   "course_code": "CSL1.204","credits": 4 },
+        { "course_name": "Introduction to Natural Language Processing",                        "course_code": "CS7.401", "credits": 4 },
+        { "course_name": "Design and Analysis of Software Systems",                            "course_code": "CS6.301", "credits": 4 },
+        { "course_name": "Machine, Data and Learning",                                         "course_code": "CS7.301", "credits": 4 },
+        { "course_name": "Introduction to Human Sciences",                                     "course_code": "HS8.102", "credits": 4 }
+      ]
+    },
+    {
+      "name": "Semester 5 — Monsoon (Year 3)",
+      "courses": [
+        { "course_name": "Honours-1",                                                          "course_code": "CL9.302", "credits": 2 },
+        { "course_name": "Advanced NLP",                                                       "course_code": "CS7.501", "credits": 4 },
+        { "course_name": "Operating Systems and Networks",                                     "course_code": "CS2.201", "credits": 4 },
+        { "course_name": "CS Elective-1",                                                      "course_code": "CS ELEC", "credits": 4 },
+        { "course_name": "Science-1",                                                          "course_code": "SC ELEC", "credits": 4 },
+        { "course_name": "HSS Elective-1",                                                     "course_code": "HS ELEC", "credits": 4 }
+      ]
+    },
+    {
+      "name": "Semester 6 — Spring (Year 3)",
+      "courses": [
+        { "course_name": "Honours-2",                                                          "course_code": "CL9.303", "credits": 2 },
+        { "course_name": "CL Stream Elective-1",                                               "course_code": "CL STRM", "credits": 4 },
+        { "course_name": "CS Elective-2",                                                      "course_code": "CS ELEC", "credits": 4 },
+        { "course_name": "Open Elective-1",                                                    "course_code": "OE ELEC", "credits": 4 },
+        { "course_name": "Science-2",                                                          "course_code": "SC ELEC", "credits": 4 },
+        { "course_name": "HSS Elective-2",                                                     "course_code": "HS ELEC", "credits": 4 }
+      ]
+    },
+    {
+      "name": "Semester 7 — Monsoon (Year 4)",
+      "courses": [
+        { "course_name": "Honours-3",                                                          "course_code": "CL9.402", "credits": 2 },
+        { "course_name": "CL Stream Elective-2",                                               "course_code": "CL STRM", "credits": 4 },
+        { "course_name": "CL Stream Elective-3",                                               "course_code": "CL STRM", "credits": 4 },
+        { "course_name": "Ethics-1",                                                           "course_code": "ETHICS",  "credits": 2 },
+        { "course_name": "CS Elective-3",                                                      "course_code": "CS ELEC", "credits": 4 },
+        { "course_name": "Open Elective-2",                                                    "course_code": "OE ELEC", "credits": 4 }
+      ]
+    },
+    {
+      "name": "Semester 8 — Spring (Year 4)",
+      "courses": [
+        { "course_name": "Honours-4",                                                          "course_code": "CL9.403", "credits": 2 },
+        { "course_name": "Maths Elective",                                                     "course_code": "MA ELEC", "credits": 4 },
+        { "course_name": "Ethics-2",                                                           "course_code": "ETHICS",  "credits": 2 },
+        { "course_name": "CL Stream Elective-4",                                               "course_code": "CL STRM", "credits": 2 },
+        { "course_name": "CS Elective-4",                                                      "course_code": "CS ELEC", "credits": 4 },
+        { "course_name": "Open Elective-3",                                                    "course_code": "OE ELEC", "credits": 4 }
+      ]
+    },
+    {
+      "name": "Semester 9 — Monsoon (Year 5)",
+      "courses": [
+        { "course_name": "Thesis",                                                             "course_code": "CL9.605", "credits": 12 }
+      ]
+    },
+    {
+      "name": "Semester 10 — Spring (Year 5)",
+      "courses": [
+        { "course_name": "Thesis",                                                             "course_code": "CL9.605", "credits": 12 }
+      ]
+    }
+  ]
+}
