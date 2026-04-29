@@ -44,10 +44,11 @@ const Home = () => {
 
     const fileInputRef = React.useRef(null);
     const { loadData } = useContext(DataContext);
-    const [modalConfig, setModalConfig] = useState({ open: false, title: '', message: '', onConfirm: null, isAlert: false });
+    const [modalConfig, setModalConfig] = useState({ open: false, title: '', message: '', customBody: null, onConfirm: null, isAlert: false });
     const [importing, setImporting] = useState(false);
     const [templates, setTemplates] = useState([]);
     const [showImportMenu, setShowImportMenu] = useState(false);
+    const importModeRef = React.useRef('merge');
 
     useEffect(() => {
         const fetchTemplates = async () => {
@@ -102,15 +103,45 @@ const Home = () => {
             if (s.courses) courseCount += s.courses.length;
         });
 
+        importModeRef.current = 'merge';
+
         setModalConfig({
             open: true,
             title: 'Import Template',
-            message: `This will add ${json.semesters.length} semesters and ${courseCount} courses. Continue?`,
+            customBody: (
+                <div className="space-y-4 mb-6">
+                    <p className="text-gray-400 text-sm">
+                        This will add {json.semesters.length} semesters and {courseCount} courses. How would you like to import?
+                    </p>
+                    <div className="space-y-3 bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+                        <label className="flex items-start space-x-3 cursor-pointer group">
+                            <input type="radio" name="importMode" value="merge" defaultChecked onChange={() => importModeRef.current = 'merge'} className="mt-1 accent-neonEmerald" />
+                            <div>
+                                <div className="text-gray-200 text-sm font-medium group-hover:text-neonEmerald transition-colors">Merge with existing</div>
+                                <div className="text-gray-500 text-xs">Appends new semesters to your current data</div>
+                            </div>
+                        </label>
+                        <label className="flex items-start space-x-3 cursor-pointer group">
+                            <input type="radio" name="importMode" value="replace" onChange={() => importModeRef.current = 'replace'} className="mt-1 accent-neonRed" />
+                            <div>
+                                <div className="text-gray-200 text-sm font-medium group-hover:text-neonRed transition-colors">Clear and Replace</div>
+                                <div className="text-neonRed/80 text-xs font-medium">Deletes all current semesters before importing</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            ),
             confirmText: 'Import',
             onConfirm: async () => {
                 setModalConfig(prev => ({ ...prev, open: false }));
                 setImporting(true);
                 try {
+                    if (importModeRef.current === 'replace') {
+                        for (let s of semesters) {
+                            await api.deleteSemester(s.id);
+                        }
+                    }
+
                     for (let s of json.semesters) {
                         const semRes = await api.createSemester({ name: s.name });
                         if (semRes.data && semRes.data[0] && s.courses) {
