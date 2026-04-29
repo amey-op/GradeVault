@@ -16,16 +16,16 @@ const App = () => {
         return () => subscription.unsubscribe();
     }, []);
 
-    const loadData = async () => {
+    const loadData = async (backgroundRefresh = false) => {
         if (!session) return;
-        setLoading(true);
+        if (!backgroundRefresh) setLoading(true);
         try {
             const res = await api.getSemesters();
             setSemesters(res.data || []);
         } catch (err) {
             console.error(err);
         } finally {
-            setLoading(false);
+            if (!backgroundRefresh) setLoading(false);
         }
     };
 
@@ -47,7 +47,7 @@ const App = () => {
                 supabase.auth.getSession().then(({ data: { session: newSession } }) => {
                     setSession(newSession);
                     if (newSession) {
-                        loadData();
+                        loadData(true);
                     }
                 });
             }

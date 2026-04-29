@@ -46,6 +46,36 @@ const Home = () => {
     const { loadData } = useContext(DataContext);
     const [modalConfig, setModalConfig] = useState({ open: false, title: '', message: '', onConfirm: null, isAlert: false });
     const [importing, setImporting] = useState(false);
+    const [templates, setTemplates] = useState([]);
+    const [showImportMenu, setShowImportMenu] = useState(false);
+
+    useEffect(() => {
+        const fetchTemplates = async () => {
+            try {
+                const res = await fetch('https://api.github.com/repos/amey-op/GradeVault/contents/JSON');
+                if (res.ok) {
+                    const data = await res.json();
+                    const parsedTemplates = [];
+                    data.forEach(file => {
+                        if (file.name.endsWith('.json')) {
+                            const match = file.name.match(/iiit_(.*?)_template\.json/);
+                            if (match && match[1]) {
+                                parsedTemplates.push({
+                                    name: file.name,
+                                    title: match[1].toUpperCase(),
+                                    url: file.download_url || `/JSON/${file.name}`
+                                });
+                            }
+                        }
+                    });
+                    setTemplates(parsedTemplates);
+                }
+            } catch (err) {
+                console.error("Failed to load templates", err);
+            }
+        };
+        fetchTemplates();
+    }, []);
 
     const handleDownload = () => {
         const exportData = {
@@ -66,6 +96,60 @@ const Home = () => {
         dlAnchorElem.click();
     };
 
+    const processImport = async (json) => {
+        let courseCount = 0;
+        json.semesters.forEach(s => {
+            if (s.courses) courseCount += s.courses.length;
+        });
+
+        setModalConfig({
+            open: true,
+            title: 'Import Template',
+            message: `This will add ${json.semesters.length} semesters and ${courseCount} courses. Continue?`,
+            confirmText: 'Import',
+            onConfirm: async () => {
+                setModalConfig(prev => ({ ...prev, open: false }));
+                setImporting(true);
+                try {
+                    for (let s of json.semesters) {
+                        const semRes = await api.createSemester({ name: s.name });
+                        if (semRes.data && semRes.data[0] && s.courses) {
+                            const semId = semRes.data[0].id;
+                            for (let c of s.courses) {
+                                await api.createCourse(semId, {
+                                    course_name: c.course_name,
+                                    course_code: c.course_code,
+                                    credits: parseInt(c.credits) || 0
+                                });
+                            }
+                        }
+                    }
+                    await loadData(true); // background refresh
+                    setModalConfig({ open: true, title: 'Success', message: 'Template imported successfully!', isAlert: true, confirmText: 'OK', onConfirm: () => setModalConfig(prev => ({...prev, open: false})) });
+                } catch (err) {
+                    setModalConfig({ open: true, title: 'Error', message: "Error importing: " + err.message, isAlert: true, confirmText: 'OK', onConfirm: () => setModalConfig(prev => ({...prev, open: false})) });
+                } finally {
+                    setImporting(false);
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                }
+            }
+        });
+    };
+
+    const handleTemplateClick = async (template) => {
+        setShowImportMenu(false);
+        try {
+            setImporting(true);
+            const res = await fetch(template.url);
+            const json = await res.json();
+            setImporting(false);
+            processImport(json);
+        } catch (err) {
+            setImporting(false);
+            setModalConfig({ open: true, title: 'Error', message: 'Failed to download template.', isAlert: true, confirmText: 'OK', onConfirm: () => setModalConfig(prev => ({...prev, open: false})) });
+        }
+    };
+
     const handleImportClick = () => {
         if (fileInputRef.current) fileInputRef.current.click();
     };
@@ -78,43 +162,7 @@ const Home = () => {
             try {
                 const json = JSON.parse(evt.target.result);
                 if (!json.semesters || !Array.isArray(json.semesters)) throw new Error("Invalid JSON structure");
-                
-                let courseCount = 0;
-                json.semesters.forEach(s => {
-                    if (s.courses) courseCount += s.courses.length;
-                });
-
-                setModalConfig({
-                    open: true,
-                    title: 'Import Template',
-                    message: `This will add ${json.semesters.length} semesters and ${courseCount} courses. Continue?`,
-                    confirmText: 'Import',
-                    onConfirm: async () => {
-                        setModalConfig(prev => ({ ...prev, open: false }));
-                        setImporting(true);
-                        try {
-                            for (let s of json.semesters) {
-                                const semRes = await api.createSemester({ name: s.name });
-                                if (semRes.data && semRes.data[0] && s.courses) {
-                                    const semId = semRes.data[0].id;
-                                    for (let c of s.courses) {
-                                        await api.createCourse(semId, {
-                                            course_name: c.course_name,
-                                            course_code: c.course_code,
-                                            credits: parseInt(c.credits) || 0
-                                        });
-                                    }
-                                }
-                            }
-                            await loadData();
-                        } catch (err) {
-                            setModalConfig({ open: true, title: 'Error', message: "Error importing: " + err.message, isAlert: true, confirmText: 'OK', onConfirm: () => setModalConfig(prev => ({...prev, open: false})) });
-                        } finally {
-                            setImporting(false);
-                            if (fileInputRef.current) fileInputRef.current.value = '';
-                        }
-                    }
-                });
+                processImport(json);
             } catch (err) {
                 setModalConfig({
                     open: true, title: 'Error', message: 'Invalid JSON format.', isAlert: true, confirmText: 'OK', onConfirm: () => setModalConfig(prev => ({...prev, open: false}))
@@ -151,7 +199,7 @@ const Home = () => {
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl sm:text-3xl font-bold flex flex-col md:flex-row items-start md:items-center">
                     <span>Hello {profile?.username || 'User'} 👋</span>
-                    {importing && <span className="md:ml-4 text-sm text-neonEmerald animate-pulse mt-1 md:mt-0">Importing...</span>}
+                    {importing && <span className="md:ml-4 text-sm text-neonEmerald animate-pulse mt-1 md:mt-0">Processing...</span>}
                 </h1>
             </div>
             
@@ -254,9 +302,33 @@ const Home = () => {
                 <button onClick={handleDownload} className="border border-gray-600 text-gray-300 hover:text-white hover:border-white px-4 py-1.5 rounded-lg transition-colors text-sm font-medium flex items-center space-x-2">
                     <Icons.Download /> <span>Share My Structure</span>
                 </button>
-                <button onClick={handleImportClick} className="border border-gray-600 text-gray-300 hover:text-white hover:border-white px-4 py-1.5 rounded-lg transition-colors text-sm font-medium flex items-center space-x-2">
-                    <Icons.Plus /> <span>Import Template</span>
-                </button>
+                <div className="relative">
+                    <button onClick={() => setShowImportMenu(!showImportMenu)} className="border border-gray-600 text-gray-300 hover:text-white hover:border-white px-4 py-1.5 rounded-lg transition-colors text-sm font-medium flex items-center space-x-2">
+                        <Icons.Plus /> <span>Import Template</span>
+                        <div className="ml-1"><Icons.ChevronDown /></div>
+                    </button>
+                    {showImportMenu && (
+                        <>
+                            <div className="fixed inset-0 z-30" onClick={() => setShowImportMenu(false)}></div>
+                            <div className="absolute left-0 mt-2 w-48 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-40 py-2 animate-fade-in">
+                                {templates.length > 0 && (
+                                    <>
+                                        <div className="px-4 py-2 text-xs font-bold text-gray-500 uppercase tracking-wider">IIIT Templates</div>
+                                        {templates.map(t => (
+                                            <button key={t.name} onClick={() => handleTemplateClick(t)} className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800 transition-colors">
+                                                {t.title}
+                                            </button>
+                                        ))}
+                                        <div className="border-t border-gray-800 my-1"></div>
+                                    </>
+                                )}
+                                <button onClick={() => { setShowImportMenu(false); handleImportClick(); }} className="w-full text-left px-4 py-2 text-sm text-neonEmerald hover:bg-gray-800 transition-colors font-medium">
+                                    Custom Local File...
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
                 <input type="file" className="hidden" ref={fileInputRef} onChange={handleFileChange} accept=".json" />
             </div>
 
